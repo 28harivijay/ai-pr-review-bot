@@ -38,13 +38,17 @@ class PRData(BaseModel):
 # Groq provides fast inference for LLaMA models
 llm = ChatGroq(
     api_key=os.getenv("PRapi"),  # API key from environment variables
-    model="llama-3.3-70b-versatile"  # Using LLaMA 3.3 70B model
+    model="openai/gpt-oss-120b"  # Using LLaMA 3.3 70B model
 )
 
 # Define the prompt template for code review
 # This template instructs the AI to act as an expert code reviewer
 prompt = ChatPromptTemplate.from_template(
-    "You are expert in code review and you are given a pull request with the following code changes. Please review it and give feedback on bugs, readability and improvements : \n\n{code}"
+    "You are an expert code reviewer. Review the pull request diff below. "
+    "Be concise. Use a short bullet list grouped under these headings, skipping any that don't apply: "
+    "Bugs, Security, Readability, Suggestions. "
+    "For each issue, name the file, say what's wrong in one or two sentences, and show a short fix in a code block if useful. "
+    "Do not use tables. Do not restate the code.\n\n{code}"
 )
 
 # Create a chain that connects the prompt template to the LLM
@@ -86,13 +90,19 @@ async def webhook(payload: dict):
     Returns:
         Status confirmation
     """
-    # Check if the webhook event is a PR being opened
-    if payload["action"] == "opened":
+    # Review pull requests when they are opened, reopened, or updated
+    if "pull_request" in payload and payload.get("action") in {
+        "opened",
+        "reopened",
+        "synchronize",
+    }:
         pr_number = payload["number"]
         repo = payload["repository"]["full_name"]
         
         # Fetch the PR diff from GitHub
         diff = github_reviewer.fetch_pr_diff(repo, pr_number)
+        if len(diff) > 12000:
+            diff = diff[:12000] + "\n[diff truncated]"
         
         # Generate code review using the LLM chain
         comment = github_reviewer.review_code(diff, chain)

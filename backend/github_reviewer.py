@@ -28,6 +28,8 @@ def fetch_pr_diff(repo, pr_number):
         }
     )
     
+    response.raise_for_status()
+
     # Parse the JSON response containing file information
     files = response.json()
     
@@ -35,7 +37,7 @@ def fetch_pr_diff(repo, pr_number):
     diff = ""
     for file in files:
         # Each file has a 'patch' field containing the diff
-        diff += file.get("patch", "")
+        diff += f"\n--- File: {file['filename']} ---\n{file.get('patch', '')}\n"
     
     return diff
 
@@ -70,7 +72,7 @@ def post_comment(repo, pr_number, comment):
     url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
     
     # Make authenticated POST request to GitHub API
-    requests.post(
+    response = requests.post(
         url,
         headers={
             "Authorization": f"Bearer {os.getenv('PRgit')}",  # GitHub API token
@@ -78,3 +80,4 @@ def post_comment(repo, pr_number, comment):
         },
         json={"body": comment}  # Comment text to post
     )
+    response.raise_for_status()
