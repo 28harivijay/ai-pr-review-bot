@@ -48,7 +48,8 @@ prompt = ChatPromptTemplate.from_template(
     "Be concise. Use a short bullet list grouped under these headings, skipping any that don't apply: "
     "Bugs, Security, Readability, Suggestions. "
     "For each issue, name the file, say what's wrong in one or two sentences, and show a short fix in a code block if useful. "
-    "Do not use tables. Do not restate the code.\n\n{code}"
+    "Do not use tables. Do not restate the code. "
+    "Pay close attention to off-by-one and boundary-condition bugs, and check that each function does what its name says.\n\n{code}"
 )
 
 # Create a chain that connects the prompt template to the LLM
